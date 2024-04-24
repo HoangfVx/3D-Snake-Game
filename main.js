@@ -101,7 +101,7 @@ plane.position.z = resolution.y / 2 - 0.5;
 scene.add(plane);
 
 // Create Snake 
-const snake = new Snake({scene});
+const snake = new Snake({scene, resolution});
 console.log(snake);
 
 /**

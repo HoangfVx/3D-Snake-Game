@@ -5,6 +5,7 @@ export default class LinkedKList {
     }
 
     addNode(node) {
-        
+        this.end.linkTo(node);
+        this.end = node;
     }
 }

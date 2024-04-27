@@ -8,7 +8,7 @@ export default class ListNode {
     }
 
     linkTo(node){
+        node.prev = this;
         this.next = node;
-        this.prev = this
     }
 }

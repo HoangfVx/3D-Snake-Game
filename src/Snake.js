@@ -26,13 +26,19 @@ export default class Snake extends EventDispatcher {
     
     direction = RIGHT;
     indexes = [];
-    constructor({scene, resolution = new Vector2(10, 10)}) {
+	speedInterval = 240
+    constructor({scene, resolution = new Vector2(10, 10), color, mouthColor }) {
         
         super()
         
         this.scene = scene
         this.resolution = resolution
-       
+		this.mouthColor = mouthColor
+
+		if (color) {
+			NODE_MATERIAL.color.set(color)
+		}
+
         this.init()
     }
 
@@ -72,13 +78,15 @@ export default class Snake extends EventDispatcher {
 		const mouthMesh = new Mesh(
 			new RoundedBoxGeometry(1.05, 0.1, 0.6, 5, 0.1),
 			new MeshStandardMaterial({
-				color: 0x614bdd,
+				color: this.mouthColor, //0x614bdd,
 			})
 		)
 
 		mouthMesh.rotation.x = -Math.PI * 0.07
 		mouthMesh.position.z = 0.23
 		mouthMesh.position.y = -0.19
+
+		this.mouth = mouthMesh
 
 		headMesh.add(rightEye, leftEye, mouthMesh)
 
@@ -87,6 +95,7 @@ export default class Snake extends EventDispatcher {
 
 	init() {
 		this.direction = RIGHT
+		this.iMoving = null
 
 		const head = new ListNode(new SnakeNode(this.resolution))
 
@@ -110,6 +119,19 @@ export default class Snake extends EventDispatcher {
 		this.scene.add(head.data.mesh)
 	}
 
+	// move() {
+	// 	this.update()
+
+	// 	this.isMoving = setTimeout(() => {
+	// 		this.move()
+	// 	}, this.speedInterval)
+	// }
+
+	// stop() {
+	// 	clearTimeout(this.isMoving)
+	// 	this.isMoving = null
+	// }
+	
     setDirection(keyCode) {
 
         let newDirection;

@@ -1,6 +1,6 @@
-import { Vector2 } from 'three'
+import { Vector3 } from 'three'
 
-const resolution = new Vector2(20, 20)
+const resolution = new Vector3(20, 20, 20)
 
 const colors = {
 	groundColor: '#ff7438',

@@ -13,6 +13,8 @@ import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
 import fontSrc from 'three/examples/fonts/helvetiker_bold.typeface.json?url'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
 import Entity from './src/Entity'
+import { MeshStandardMaterial } from 'three'
+
 
 const isMobile = window.innerWidth <= 768
 const loader = new FontLoader()
@@ -31,12 +33,12 @@ let gui //= new dat.GUI()
 
 const palettes = {
 	green: {
-		groundColor: 0x56f854,
+		groundColor: 0x6CB4EE,
 		fogColor: 0x39c09f,
 		rockColor: 0xebebeb, //0x7a95ff,
 		treeColor: 0x639541, //0x1d5846,
 		candyColor: 0x1d5846, //0x614bdd,
-		snakeColor: 0x1d5846, //0xff470a,
+		// snakeColor: 0xc9e4c3, //0xff470a,
 		mouthColor: 0x39c09f,
 	},
 	orange: {
@@ -45,7 +47,7 @@ const palettes = {
 		rockColor: 0xacacac,
 		treeColor: 0xa2d109,
 		candyColor: 0x614bdd,
-		snakeColor: 0xff470a,
+		// snakeColor: 0xff470a,
 		mouthColor: 0x614bdd,
 	},
 	lilac: {
@@ -54,7 +56,7 @@ const palettes = {
 		rockColor: 0xebebeb,
 		treeColor: 0x53d0c1,
 		candyColor: 0x9900ff,
-		snakeColor: 0xff2ed2,
+		// snakeColor: 0xff2ed2,
 		mouthColor: 0x614bdd,
 	},
 }
@@ -154,16 +156,69 @@ if (gui) {
 let score = 0
 
 // const resolution = new THREE.Vector2(20, 20);
-const gridHelper = new THREE.GridHelper(
+const gridHelperXY = new THREE.GridHelper(
 	resolution.x,
 	resolution.y,
 	0xffffff,
 	0xffffff
 )
-gridHelper.position.set(resolution.x / 2 - 0.5, -0.49, resolution.y / 2 - 0.5)
-gridHelper.material.transparent = true
-gridHelper.material.opacity = isMobile ? 0.75 : 0.3
+gridHelperXY.position.set(resolution.x / 2 - 0.5, -0.49, resolution.y / 2 - 0.5)
+gridHelperXY.material.transparent = true
+gridHelperXY.material.opacity = isMobile ? 0.75 : 0.3
 
+const gridHelperYX = new THREE.GridHelper(
+	resolution.x,
+	resolution.y,
+	0xffffff,
+	0xffffff
+)
+gridHelperYX.position.set(resolution.x / 2 - 0.5, -0.5- resolution.y, resolution.y / 2 - 0.5)
+gridHelperYX.material.transparent = true
+gridHelperYX.material.opacity = isMobile ? 0.75 : 0.3
+
+const gridHelperXZ = new THREE.GridHelper(
+	resolution.x,
+	resolution.y,
+	0xffffff,
+	0xffffff
+)
+gridHelperXZ.rotation.x = Math.PI / 2;
+gridHelperXZ.position.set(resolution.x / 2 - 0.5, resolution.y / 2 - 0.5 - resolution.y, -0.5)
+gridHelperXZ.material.transparent = true
+gridHelperXZ.material.opacity = isMobile ? 0.75 : 0.3
+
+const gridHelperZX = new THREE.GridHelper(
+	resolution.x,
+	resolution.y,
+	0xffffff,
+	0xffffff
+)
+gridHelperZX.rotation.x = Math.PI / 2;
+gridHelperZX.position.set(resolution.x / 2 - 0.5, resolution.y / 2 - 0.5 - resolution.y, -0.5 + resolution.y)
+gridHelperZX.material.transparent = true
+gridHelperZX.material.opacity = isMobile ? 0.75 : 0.3
+
+const gridHelperYZ = new THREE.GridHelper(
+	resolution.x,
+	resolution.y,
+	0xffffff,
+	0xffffff
+)
+gridHelperYZ.rotation.z = Math.PI / 2;
+gridHelperYZ.position.set(-0.5, resolution.x / 2 - 0.5 - resolution.y, resolution.y / 2 - 0.5)
+gridHelperYZ.material.transparent = true
+gridHelperYZ.material.opacity = isMobile ? 0.75 : 0.3
+
+const gridHelperZY = new THREE.GridHelper(
+	resolution.x,
+	resolution.y,
+	0xffffff,
+	0xffffff
+)
+gridHelperZY.rotation.z = Math.PI / 2;
+gridHelperZY.position.set(-0.5 + resolution.y, resolution.x / 2 - 0.5 - resolution.y, resolution.y / 2 - 0.5)
+gridHelperZY.material.transparent = true
+gridHelperZY.material.opacity = isMobile ? 0.75 : 0.3
 /**
  * Scene
  */
@@ -172,7 +227,14 @@ scene.background = new THREE.Color(params.fogColor)
 
 scene.fog = new THREE.Fog(params.fogColor, 5, 40)
 
-scene.add(gridHelper)
+scene.add(gridHelperXY)
+scene.add(gridHelperYX)
+
+scene.add(gridHelperXZ)
+scene.add(gridHelperZX)
+
+scene.add(gridHelperYZ)
+scene.add(gridHelperZY)
 /**
  * Cube
  */
@@ -238,9 +300,9 @@ renderer.shadowMap.type = THREE.VSMShadowMap
  */
 const controls = new OrbitControls(camera, renderer.domElement)
 controls.enableDamping = true
-controls.enableZoom = false
+controls.enableZoom = true
 controls.enablePan = false
-controls.enableRotate = false
+controls.enableRotate = true
 controls.target.set(resolution.x / 2 - 2, 0, resolution.y / 2 + (isMobile ? 0 : 2))
 
 /**
@@ -250,16 +312,17 @@ controls.target.set(resolution.x / 2 - 2, 0, resolution.y / 2 + (isMobile ? 0 : 
 
 //Grid
 
-const planeGeometry = new THREE.PlaneGeometry(
-	resolution.x * 50,
-	resolution.y * 50
+const planeGeometry = new THREE.BoxGeometry(
+	resolution.x,
+	resolution.y,
+	resolution.z 
 );
 planeGeometry.rotateX(-Math.PI * 0.5);
-const planeMaterial = new THREE.MeshStandardMaterial({ color: params.groundColor })
+const planeMaterial = new THREE.MeshStandardMaterial({ color: params.groundColor, opacity: 0.6, transparent: true})
 const plane = new THREE.Mesh(planeGeometry, planeMaterial);
 plane.position.x = resolution.x / 2 - 0.5;
 plane.position.z = resolution.y / 2 - 0.5;
-plane.position.y = -0.5
+plane.position.y = -10.5
 scene.add(plane);
 
 plane.receiveShadow = true
@@ -332,10 +395,12 @@ function printScore() {
 	if (isMobile) {
 		geometry.rotateX(-Math.PI * 0.5)
 	}
-
+	const SCORE_MATERIAL = new MeshStandardMaterial({
+		color: 0x1B1C1C
+	})
 	const mesh = new THREE.Mesh(
 		geometry,
-		snake.body.head.data.mesh.material
+		SCORE_MATERIAL
 	)
 
 	mesh.position.x = resolution.x / 2 - 0.5

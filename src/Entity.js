@@ -9,15 +9,19 @@ export default class Entity {
 
         this.resolution = resolution;
         this.option = option
+        this.usedIndexes = new Set();
     }
     get position() {
         return this.mesh.position;
     }
 
     getIndexByCoord() {
-        const {x, y} = this.resolution;
-        return this.position.z * x + this.position.x;
-    }
+        const { x, y, z } = this.resolution; // Lấy kích thước không gian 3D
+        let index = (this.mesh.position.z * x * y) + (this.mesh.position.y * x) + this.mesh.position.x; // Tính toán index dựa trên vị trí x, y, z
+
+
+        return index;
+    }     
 
     in() {
 		gsap.from(this.mesh.scale, {

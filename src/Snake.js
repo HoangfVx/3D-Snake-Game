@@ -6,28 +6,32 @@ import {
 	SphereGeometry,
 	Vector2,
 	Vector3,
+	TextureLoader
 } from 'three'
 import LinkedKList from "./LinkedList";
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry';
 import ListNode from "./ListNode";
 import Entity from "./Entity";
 
+const texture = new TextureLoader().load('../assets/crepper.png' ); 
 const NODE_GEOMETRY = new RoundedBoxGeometry(0.9, 0.9, 0.9, 5, 0.1);
 const NODE_MATERIAL = new MeshStandardMaterial({
-	color: 0xff470a,
+	map: texture
 })
 
 const UP = new Vector3(0, 0, -1);
 const DOWN = new Vector3(0, 0, 1);
 const LEFT = new Vector3(-1, 0, 0);
 const RIGHT = new Vector3(1, 0, 0);
+const HIGH = new Vector3(0, 1, 0);
+const LOW = new Vector3(0, -1, 0);
 
 export default class Snake extends EventDispatcher {
     
     direction = RIGHT;
     indexes = [];
 	speedInterval = 240
-    constructor({scene, resolution = new Vector2(10, 10), color, mouthColor }) {
+    constructor({scene, resolution = new Vector3(10, 10, 10), color, mouthColor }) {
         
         super()
         
@@ -36,7 +40,7 @@ export default class Snake extends EventDispatcher {
 		this.mouthColor = mouthColor
 
 		if (color) {
-			NODE_MATERIAL.color.set(color)
+			NODE_MATERIAL.map.set(color)
 		}
 
         this.init()
@@ -48,6 +52,10 @@ export default class Snake extends EventDispatcher {
 
     get end(){
         return this.body.end;
+    }
+
+	get headPosition() {
+        return this.head.data.mesh.position.clone();
     }
 
     createHeadMesh() {
@@ -100,7 +108,8 @@ export default class Snake extends EventDispatcher {
 		const head = new ListNode(new SnakeNode(this.resolution))
 
 		head.data.mesh.position.x = this.resolution.x / 2
-		head.data.mesh.position.z = this.resolution.y / 2
+		head.data.mesh.position.y = 0
+		head.data.mesh.position.z = this.resolution.z / 2
 		this.body = new LinkedKList(head)
 
 		this.createHeadMesh()
@@ -118,19 +127,6 @@ export default class Snake extends EventDispatcher {
 		head.data.in()
 		this.scene.add(head.data.mesh)
 	}
-
-	// move() {
-	// 	this.update()
-
-	// 	this.isMoving = setTimeout(() => {
-	// 		this.move()
-	// 	}, this.speedInterval)
-	// }
-
-	// stop() {
-	// 	clearTimeout(this.isMoving)
-	// 	this.isMoving = null
-	// }
 	
     setDirection(keyCode) {
 
@@ -153,6 +149,12 @@ export default class Snake extends EventDispatcher {
 			case 'KeyD':
 				newDirection = RIGHT
 				break
+			case 'KeyQ':
+				newDirection = HIGH
+				break
+			case 'KeyE':
+				newDirection = LOW
+				break	
 			default:
 				return
         }
@@ -164,59 +166,187 @@ export default class Snake extends EventDispatcher {
     }
 
     update() {
-        // console.log('update')
-
-        if (this.newDirection) {
-            this.direction = this.newDirection;
-            this.newDirection = null;
-        }
-        let currentNode = this.end;
-
-        if (this.end.data.candy) {
-			this.end.data.candy = null
-			this.end.data.mesh.scale.setScalar(1)
-
-			this.addTailNode()
+		// Kiểm tra và cập nhật hướng di chuyển nếu cần
+		if (this.newDirection) {
+			this.direction = this.newDirection;
+			this.newDirection = null;
 		}
-
-        while (currentNode.prev) {
-			const candy = currentNode.prev.data.candy
+		let currentNode = this.end;
+	
+		// Kiểm tra nếu có kẹo ở cuối
+		if (this.end.data.candy) {
+			this.end.data.candy = null;
+			this.end.data.mesh.scale.setScalar(1);
+	
+			this.addTailNode();
+		}
+	
+		// Di chuyển các nút của rắn
+		while (currentNode.prev) {
+			const candy = currentNode.prev.data.candy;
 			if (candy) {
-				currentNode.data.candy = candy
-				currentNode.data.mesh.scale.setScalar(1.15)
-				currentNode.prev.data.candy = null
-				currentNode.prev.data.mesh.scale.setScalar(1)
+				currentNode.data.candy = candy;
+				currentNode.data.mesh.scale.setScalar(1.15);
+				currentNode.prev.data.candy = null;
+				currentNode.prev.data.mesh.scale.setScalar(1);
 			}
-
-			const position = currentNode.prev.data.mesh.position
-			currentNode.data.mesh.position.copy(position)
-
-			currentNode = currentNode.prev
+	
+			const position = currentNode.prev.data.mesh.position;
+			currentNode.data.mesh.position.copy(position);
+	
+			currentNode = currentNode.prev;
 		}
-        const headPos = currentNode.data.mesh.position;
-        headPos.add(this.direction);
-        // currentNode.data.mesh.position.add(this.direction);
-        const headMesh = this.body.head.data.mesh
-		headMesh.lookAt(headMesh.position.clone().add(this.direction))
+	
+		// Cập nhật vị trí đầu rắn
+		const headPos = currentNode.data.mesh.position.clone();
+		headPos.add(this.direction);
+	
+		// Kiểm tra va chạm với các cạnh của hộp và chuyển sang mặt liền kề
+		// if (headPos.x < 0) {
+		// 	headPos.x = this.resolution.x - 1;
+		// 	if (this.direction.equals(LEFT)) {
+		// 		if (headPos.z === 0) {
+		// 			headPos.z = this.resolution.z - 1;
+		// 			this.direction = DOWN;
+		// 		} else if (headPos.z === this.resolution.z - 1) {
+		// 			headPos.z = -1;
+		// 			this.direction = UP;
+		// 		}
+		// 	}
+		// } else if (headPos.x >= this.resolution.x) {
+		// 	headPos.x = 0;
+		// 	if (this.direction.equals(RIGHT)) {
+		// 		if (headPos.z === 0) {
+		// 			headPos.z = this.resolution.z - 1;
+		// 			this.direction = DOWN;
+		// 		} else if (headPos.z === this.resolution.z - 1) {
+		// 			headPos.z = 0;
+		// 			this.direction = UP;
+		// 		}
+		// 	}
+		// }
+		
+		// if (headPos.y >= 0) {
+		// 	switch (this.direction) {
+		// 		case HIGH:
+		// 			this.direction = DOWN;
+		// 			break;
+		// 		case LOW:
+		// 			this.direction = UP;
+		// 			break;
+		// 		default:
+		// 			break;
+		// 	}
+		// } else if (headPos.y == -this.resolution.y - 1) {
+		// 	switch (this.direction) {
+		// 		case HIGH:
+		// 			this.direction = DOWN;
+		// 			break;
+		// 		case LOW:
+		// 			this.direction = UP;
+		// 			break;
+		// 		default:
+		// 			break;
+		// 	}
+		// }
+		//Y và Z
 
-        if(headPos.z < 0) {
-            headPos.z = this.resolution.y -1;
-        } else if(headPos.z > this.resolution.y -1) {
-            headPos.z = 0;
-        }
+		if(headPos.z == this.resolution.z && headPos.y == 0 && this.direction == DOWN) {
+			this.direction = LOW
+		} else if (headPos.z == this.resolution.z && headPos.y == 0 && this.direction == HIGH) {
+			this.direction = UP
+		}
 
-        if(headPos.x < 0) {
-            headPos.x = this.resolution.x -1;
-        } else if(headPos.x > this.resolution.x -1) {
-            headPos.x = 0;
-        }
+		if(headPos.z == -1 && headPos.y == 0 && this.direction == UP) {
+			this.direction = LOW
+		} else if(headPos.z == -1 && headPos.y == 0 && this.direction == HIGH) {
+			this.direction = DOWN
+		}
 
-        this.updateIndexes()
-		// console.log(this.indexes)
+		if(headPos.z == -1 && headPos.y == -this.resolution.y - 1 && this.direction == LOW) {
+			this.direction = DOWN
+		} else if(headPos.z == -1 && headPos.y == -this.resolution.y - 1 && this.direction == UP) {
+			this.direction = HIGH
+		}
+		
+		if(headPos.z == this.resolution.y && headPos.y == -this.resolution.y - 1 && this.direction == LOW) {
+			this.direction = UP
+		} else if(headPos.z == this.resolution.y && headPos.y == -this.resolution.y - 1 && this.direction == DOWN) {
+			this.direction = HIGH
+		}
+		
+		//X và Y
 
-		this.dispatchEvent({ type: 'updated' })
+		if(headPos.x == this.resolution.x && headPos.y == 0 && this.direction == RIGHT) {
+			this.direction = LOW
+		} else if (headPos.x == this.resolution.x && headPos.y == 0 && this.direction == HIGH) {
+			this.direction = LEFT
+		}
 
-    }
+		if(headPos.x == -1 && headPos.y == 0 && this.direction == LEFT) {
+			this.direction = LOW
+		} else if(headPos.x == -1 && headPos.y == 0 && this.direction == HIGH) {
+			this.direction = RIGHT
+		}
+
+		if(headPos.x == -1 && headPos.y == -this.resolution.y - 1 && this.direction == LOW) {
+			this.direction = RIGHT
+		} else if(headPos.x == -1 && headPos.y == -this.resolution.y - 1 && this.direction == LEFT) {
+			this.direction = HIGH
+		}
+		
+		if(headPos.x == this.resolution.y && headPos.y == -this.resolution.y - 1 && this.direction == LOW) {
+			this.direction = LEFT
+		} else if(headPos.x == this.resolution.y && headPos.y == -this.resolution.y - 1 && this.direction == RIGHT) {
+			this.direction = HIGH
+		}
+
+		//X và z
+
+		if(headPos.z == this.resolution.z && headPos.x == -1 && this.direction == LEFT) {
+			this.direction = UP
+		} else if (headPos.z == this.resolution.z && headPos.x == 0 && this.direction == DOWN) {
+			this.direction = RIGHT
+		}
+
+		if(headPos.z == -1 && headPos.x == -1 && this.direction == LEFT) {
+			this.direction = DOWN
+		} else if(headPos.z == -1 && headPos.x == -1 && this.direction == UP) {
+			this.direction = RIGHT
+		}
+
+		if(headPos.z == -1 && headPos.x == this.resolution.x && this.direction == UP) {
+			this.direction = LEFT
+		} else if(headPos.z == -1 && headPos.x == this.resolution.x && this.direction == RIGHT) {
+			this.direction = DOWN
+		}
+		
+		if(headPos.z == this.resolution.z && headPos.x == this.resolution.x && this.direction == DOWN) {
+			this.direction = LEFT
+		} else if(headPos.z == this.resolution.z && headPos.x == this.resolution.x && this.direction == RIGHT) {
+			this.direction = UP
+		}
+				
+		console.log(headPos)
+		console.log(this.direction)
+		// Cập nhật vị trí đầu rắn
+		currentNode.data.mesh.position.copy(headPos);
+		const headMesh = this.body.head.data.mesh;
+		headMesh.lookAt(headMesh.position.clone().add(this.direction));
+	
+		// Kiểm tra va chạm với chính mình
+		if (this.checkSelfCollision()) {
+			this.die();
+			return;
+		}
+	
+		// Cập nhật chỉ số vị trí
+		this.updateIndexes();
+	
+		// Gọi sự kiện cập nhật
+		this.dispatchEvent({ type: 'updated' });
+	}
+			
 
     die() {
 		let node = this.body.head
@@ -228,13 +358,13 @@ export default class Snake extends EventDispatcher {
 
 		this.init()
 		this.addEventListener({ type: 'die' })
+
 	}
 
 	checkSelfCollision() {
 		const headIndex = this.indexes.pop()
 		const collide = this.indexes.includes(headIndex)
 		this.indexes.push(headIndex)
-
 		return collide
 	}
 

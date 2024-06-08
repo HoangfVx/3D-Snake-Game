@@ -19,7 +19,7 @@ export default class Rock extends Entity {
 		mesh.rotation.y = Math.random() * Math.PI * 2
 		mesh.rotation.x = Math.random() * Math.PI * 0.1
 		mesh.rotation.order = 'YXZ'
-		mesh.position.y = -0.5
+		mesh.position.y = 0
 
 		if (color) {
 			MATERIAL.color.set(color)

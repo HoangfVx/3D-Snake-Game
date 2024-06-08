@@ -8,6 +8,7 @@ import {
 	Vector3,
 	TextureLoader
 } from 'three'
+import * as THREE from 'three'
 import LinkedKList from "./LinkedList";
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry';
 import ListNode from "./ListNode";
@@ -16,7 +17,8 @@ import Entity from "./Entity";
 const texture = new TextureLoader().load('../assets/crepper.png' ); 
 const NODE_GEOMETRY = new RoundedBoxGeometry(0.9, 0.9, 0.9, 5, 0.1);
 const NODE_MATERIAL = new MeshStandardMaterial({
-	map: texture
+	map: texture,
+	side: THREE.DoubleSide
 })
 
 const UP = new Vector3(0, 0, -1);
@@ -58,12 +60,16 @@ export default class Snake extends EventDispatcher {
         return this.head.data.mesh.position.clone();
     }
 
+	get Direction() {
+        return this.head.data.mesh.direction;
+    }
+
     createHeadMesh() {
 		const headMesh = this.body.head.data.mesh
 
 		const leftEye = new Mesh(
 			new SphereGeometry(0.2, 10, 10),
-			new MeshStandardMaterial({ color: 0xffffff })
+			new MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide })
 		)
 		leftEye.scale.x = 0.1
 		leftEye.position.x = 0.5
@@ -72,7 +78,7 @@ export default class Snake extends EventDispatcher {
 
 		let leftEyeHole = new Mesh(
 			new SphereGeometry(0.22, 10, 10),
-			new MeshStandardMaterial({ color: 0x333333 })
+			new MeshStandardMaterial({ color: 0x333333, side: THREE.DoubleSide })
 		)
 		leftEyeHole.scale.set(1, 0.6, 0.6)
 		leftEyeHole.position.x += 0.05
@@ -87,6 +93,7 @@ export default class Snake extends EventDispatcher {
 			new RoundedBoxGeometry(1.05, 0.1, 0.6, 5, 0.1),
 			new MeshStandardMaterial({
 				color: this.mouthColor, //0x614bdd,
+				side: THREE.DoubleSide
 			})
 		)
 
@@ -154,7 +161,7 @@ export default class Snake extends EventDispatcher {
 				break
 			case 'KeyE':
 				newDirection = LOW
-				break	
+				break
 			default:
 				return
         }
@@ -200,135 +207,85 @@ export default class Snake extends EventDispatcher {
 		// Cập nhật vị trí đầu rắn
 		const headPos = currentNode.data.mesh.position.clone();
 		headPos.add(this.direction);
-	
-		// Kiểm tra va chạm với các cạnh của hộp và chuyển sang mặt liền kề
-		// if (headPos.x < 0) {
-		// 	headPos.x = this.resolution.x - 1;
-		// 	if (this.direction.equals(LEFT)) {
-		// 		if (headPos.z === 0) {
-		// 			headPos.z = this.resolution.z - 1;
-		// 			this.direction = DOWN;
-		// 		} else if (headPos.z === this.resolution.z - 1) {
-		// 			headPos.z = -1;
-		// 			this.direction = UP;
-		// 		}
-		// 	}
-		// } else if (headPos.x >= this.resolution.x) {
-		// 	headPos.x = 0;
-		// 	if (this.direction.equals(RIGHT)) {
-		// 		if (headPos.z === 0) {
-		// 			headPos.z = this.resolution.z - 1;
-		// 			this.direction = DOWN;
-		// 		} else if (headPos.z === this.resolution.z - 1) {
-		// 			headPos.z = 0;
-		// 			this.direction = UP;
-		// 		}
-		// 	}
-		// }
-		
-		// if (headPos.y >= 0) {
-		// 	switch (this.direction) {
-		// 		case HIGH:
-		// 			this.direction = DOWN;
-		// 			break;
-		// 		case LOW:
-		// 			this.direction = UP;
-		// 			break;
-		// 		default:
-		// 			break;
-		// 	}
-		// } else if (headPos.y == -this.resolution.y - 1) {
-		// 	switch (this.direction) {
-		// 		case HIGH:
-		// 			this.direction = DOWN;
-		// 			break;
-		// 		case LOW:
-		// 			this.direction = UP;
-		// 			break;
-		// 		default:
-		// 			break;
-		// 	}
-		// }
 		//Y và Z
+		console.log(this.direction, "z= ", headPos.z, " y=", headPos.y)
 
-		if(headPos.z == this.resolution.z && headPos.y == 0 && this.direction == DOWN) {
+		if(headPos.z >= this.resolution.z && headPos.y >= 0 && this.direction == DOWN) {
 			this.direction = LOW
-		} else if (headPos.z == this.resolution.z && headPos.y == 0 && this.direction == HIGH) {
+		} else if (headPos.z >= this.resolution.z && headPos.y >= 0 && this.direction == HIGH) {
 			this.direction = UP
 		}
 
-		if(headPos.z == -1 && headPos.y == 0 && this.direction == UP) {
+		if(headPos.z <= -1 && headPos.y >= 0 && this.direction == UP) {
 			this.direction = LOW
-		} else if(headPos.z == -1 && headPos.y == 0 && this.direction == HIGH) {
+		} else if(headPos.z <= -1 && headPos.y >= 0 && this.direction == HIGH) {
 			this.direction = DOWN
 		}
 
-		if(headPos.z == -1 && headPos.y == -this.resolution.y - 1 && this.direction == LOW) {
+		if(headPos.z <= -1 && headPos.y <= -this.resolution.y - 1 && this.direction == LOW) {
 			this.direction = DOWN
-		} else if(headPos.z == -1 && headPos.y == -this.resolution.y - 1 && this.direction == UP) {
+		} else if(headPos.z <= -1 && headPos.y <= -this.resolution.y - 1 && this.direction == UP) {
 			this.direction = HIGH
 		}
 		
-		if(headPos.z == this.resolution.y && headPos.y == -this.resolution.y - 1 && this.direction == LOW) {
+		if(headPos.z >= this.resolution.y && headPos.y <= -this.resolution.y - 1 && this.direction == LOW) {
 			this.direction = UP
-		} else if(headPos.z == this.resolution.y && headPos.y == -this.resolution.y - 1 && this.direction == DOWN) {
+		} else if(headPos.z >= this.resolution.y && headPos.y <= -this.resolution.y - 1 && this.direction == DOWN) {
 			this.direction = HIGH
 		}
 		
 		//X và Y
 
-		if(headPos.x == this.resolution.x && headPos.y == 0 && this.direction == RIGHT) {
+		if(headPos.x >= this.resolution.x && headPos.y >= 0 && this.direction == RIGHT) {
 			this.direction = LOW
-		} else if (headPos.x == this.resolution.x && headPos.y == 0 && this.direction == HIGH) {
+		} else if (headPos.x >= this.resolution.x && headPos.y >= 0 && this.direction == HIGH) {
 			this.direction = LEFT
 		}
 
-		if(headPos.x == -1 && headPos.y == 0 && this.direction == LEFT) {
+		if(headPos.x <= -1 && headPos.y >= 0 && this.direction == LEFT) {
 			this.direction = LOW
-		} else if(headPos.x == -1 && headPos.y == 0 && this.direction == HIGH) {
+		} else if(headPos.x <= -1 && headPos.y >= 0 && this.direction == HIGH) {
 			this.direction = RIGHT
 		}
 
-		if(headPos.x == -1 && headPos.y == -this.resolution.y - 1 && this.direction == LOW) {
+		if(headPos.x <= -1 && headPos.y <= -this.resolution.y - 1 && this.direction == LOW) {
 			this.direction = RIGHT
-		} else if(headPos.x == -1 && headPos.y == -this.resolution.y - 1 && this.direction == LEFT) {
+		} else if(headPos.x <= -1 && headPos.y <= -this.resolution.y - 1 && this.direction == LEFT) {
 			this.direction = HIGH
 		}
 		
-		if(headPos.x == this.resolution.y && headPos.y == -this.resolution.y - 1 && this.direction == LOW) {
+		if(headPos.x >= this.resolution.y && headPos.y <= -this.resolution.y - 1 && this.direction == LOW) {
 			this.direction = LEFT
-		} else if(headPos.x == this.resolution.y && headPos.y == -this.resolution.y - 1 && this.direction == RIGHT) {
+		} else if(headPos.x >= this.resolution.y && headPos.y <= -this.resolution.y - 1 && this.direction == RIGHT) {
 			this.direction = HIGH
 		}
 
 		//X và z
 
-		if(headPos.z == this.resolution.z && headPos.x == -1 && this.direction == LEFT) {
+		if(headPos.z >= this.resolution.z && headPos.x <= -1 && this.direction == LEFT) {
 			this.direction = UP
-		} else if (headPos.z == this.resolution.z && headPos.x == 0 && this.direction == DOWN) {
+		} else if (headPos.z >= this.resolution.z && headPos.x <= -1 && this.direction == DOWN) {
 			this.direction = RIGHT
 		}
 
-		if(headPos.z == -1 && headPos.x == -1 && this.direction == LEFT) {
+		if(headPos.z <= -1 && headPos.x <= -1 && this.direction == LEFT) {
 			this.direction = DOWN
-		} else if(headPos.z == -1 && headPos.x == -1 && this.direction == UP) {
+		} else if(headPos.z <= -1 && headPos.x <= -1 && this.direction == UP) {
 			this.direction = RIGHT
 		}
 
-		if(headPos.z == -1 && headPos.x == this.resolution.x && this.direction == UP) {
+		if(headPos.z <= -1 && headPos.x >= this.resolution.x && this.direction == UP) {
 			this.direction = LEFT
-		} else if(headPos.z == -1 && headPos.x == this.resolution.x && this.direction == RIGHT) {
+		} else if(headPos.z <= -1 && headPos.x >= this.resolution.x && this.direction == RIGHT) {
 			this.direction = DOWN
 		}
 		
-		if(headPos.z == this.resolution.z && headPos.x == this.resolution.x && this.direction == DOWN) {
+		if(headPos.z >= this.resolution.z && headPos.x >= this.resolution.x && this.direction == DOWN) {
 			this.direction = LEFT
-		} else if(headPos.z == this.resolution.z && headPos.x == this.resolution.x && this.direction == RIGHT) {
+		} else if(headPos.z >= this.resolution.z && headPos.x >= this.resolution.x && this.direction == RIGHT) {
 			this.direction = UP
 		}
 				
-		console.log(headPos)
-		console.log(this.direction)
 		// Cập nhật vị trí đầu rắn
 		currentNode.data.mesh.position.copy(headPos);
 		const headMesh = this.body.head.data.mesh;

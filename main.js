@@ -6,7 +6,7 @@ import Snake from './src/Snake'
 import Candy from './src/Candy'
 import Rock from './src/Rock'
 import Tree from './src/Tree'
-import lights from './src/Lights'
+import { dirLight, ambLight } from './src/Lights'
 import { resolution } from './src/Params'
 import gsap from 'gsap'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
@@ -14,6 +14,7 @@ import fontSrc from 'three/examples/fonts/helvetiker_bold.typeface.json?url'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
 import Entity from './src/Entity'
 import { MeshStandardMaterial } from 'three'
+import { Vector3 } from 'three'
 
 
 const isMobile = window.innerWidth <= 768
@@ -253,17 +254,19 @@ const sizes = {
 /**
  * Camera
  */
-const fov = 60;
+const fov = 70;
 const camera = new THREE.PerspectiveCamera(fov, sizes.width / sizes.height, 0.1);
+camera.lookAt(new THREE.Vector3(10, 0, 10))
+camera.rotateX(Math.PI / 2)
 
 
 
-const finalPosition = isMobile
+let finalPosition = isMobile
 	? new THREE.Vector3(resolution.x / 2 - 0.5, resolution.x + 15, resolution.y)
 	: new THREE.Vector3(
-			-8 + resolution.x / 2,
-			resolution.x / 2 + 4,
-			resolution.y + 6
+			resolution.x / 2,
+			15,
+			resolution.y + 5
 	  )
 const initialPosition = new THREE.Vector3(
 	resolution.x / 2 + 5,
@@ -303,7 +306,7 @@ controls.enableDamping = true
 controls.enableZoom = true
 controls.enablePan = false
 controls.enableRotate = true
-controls.target.set(resolution.x / 2 - 2, 0, resolution.y / 2 + (isMobile ? 0 : 2))
+controls.target.set(resolution.x / 2, 0, resolution.z / 2 + (isMobile ? 0 : 2))
 
 /**
  * Three js Clock
@@ -318,7 +321,7 @@ const planeGeometry = new THREE.BoxGeometry(
 	resolution.z 
 );
 planeGeometry.rotateX(-Math.PI * 0.5);
-const planeMaterial = new THREE.MeshStandardMaterial({ color: params.groundColor, opacity: 0.6, transparent: true})
+const planeMaterial = new THREE.MeshStandardMaterial({ color: params.groundColor, side: THREE.DoubleSide})
 const plane = new THREE.Mesh(planeGeometry, planeMaterial);
 plane.position.x = resolution.x / 2 - 0.5;
 plane.position.z = resolution.y / 2 - 0.5;
@@ -326,6 +329,7 @@ plane.position.y = -10.5
 scene.add(plane);
 
 plane.receiveShadow = true
+plane.castShadow = true
 
 // Create Snake 
 const snake = new Snake({
@@ -354,9 +358,120 @@ snake.addEventListener('updated', function () {
 		candies.splice(candyIndex, 1)
 		snake.body.head.data.candy = candy
 		addCandy()
-		score += candy.points
+		score += 1
 		// console.log(candies)
 		printScore()
+	}
+
+	if(snake.headPosition.z >= 20 && snake.headPosition.y < 0) {
+		finalPosition = new THREE.Vector3(
+			resolution.x / 2,
+			-resolution.y - 4,
+			resolution.z + 15
+	  )
+	  gsap.to(camera.position, {
+        ...finalPosition,
+        duration: 0.7,
+        onUpdate: () => {
+            camera.lookAt(resolution.x / 2, -resolution.y / 2 - 2, resolution.z);
+        },
+    });
+		gsap.to(camera.rotation, { x: Math.PI / 4});
+		camera.up.set(0, 1, 0);
+		dirLight.position.set(resolution.x + 10, -resolution.y - 4, resolution.z)
+		dirLight.target.position.set(resolution.x / 2, -resolution.y / 2 - 2, resolution.z)
+	}
+	if(snake.headPosition.x >= 20 && snake.headPosition.z <= resolution.z) {
+		finalPosition = new THREE.Vector3(
+			resolution.x + 15,
+			-resolution.y - 2,
+			resolution.z / 2
+	  )
+	  gsap.to(camera.position, {
+        ...finalPosition,
+        duration: 0.7,
+        onUpdate: () => {
+            camera.lookAt(resolution.x, -resolution.y / 2, resolution.z/2);
+        },
+    });
+		// gsap.to(camera.rotation, { x: Math.PI / 4});
+		camera.up.set(0, 1, 0);
+		dirLight.position.set(resolution.x + 15, -resolution.y - 2, - resolution.z)
+		dirLight.target.position.set(resolution.x, -resolution.y / 2, resolution.z/2)
+	}
+
+	if(snake.headPosition.z < 0 && snake.headPosition.y < 0) {
+		finalPosition = new THREE.Vector3(
+			resolution.x / 2,
+			-resolution.y - 6,
+			-resolution.z / 2
+	  )
+	  gsap.to(camera.position, {
+        ...finalPosition,
+        duration: 0.7,
+        onUpdate: () => {
+            camera.lookAt(resolution.x/2, -resolution.y / 2, 0);
+        },
+    });
+		// gsap.to(camera.rotation, { x: Math.PI / 4});
+		camera.up.set(0, 1, 0);
+		dirLight.position.set(- resolution.x, -resolution.y - 6, -resolution.z)
+		dirLight.target.position.set(resolution.x/2, -resolution.y / 2, 0)
+	}
+	if(snake.headPosition.x >= 0 && snake.headPosition.y >= 0) {
+		finalPosition = new THREE.Vector3(
+			resolution.x / 2,
+			15,
+			resolution.y + 5
+		)
+		gsap.to(camera.position, {
+			...finalPosition,
+			duration: 0.7,
+			onUpdate: () => {
+				camera.lookAt(resolution.x / 2, 0, resolution.y / 2);
+			},
+		});
+		camera.up.set(0, 1, 0);
+		dirLight.position.set(20, 20, 18)
+		dirLight.target.position.set(resolution.x / 2, 0, resolution.y / 2)
+	}
+	if(snake.headPosition.x < 0 && snake.headPosition.y < 0) {
+		finalPosition = new THREE.Vector3(
+			-resolution.x + 5,
+			-resolution.y -5,
+			resolution.z /2
+		)
+		gsap.to(camera.position, {
+			...finalPosition,
+			duration: 0.7,
+			onUpdate: () => {
+				camera.lookAt(0, resolution.y / 2, resolution.z / 2);
+			},
+		});
+		camera.up.set(0, 1, 0);
+		gsap.to(camera.rotation, {y: -Math.PI / 4})
+		dirLight.position.set(-resolution.x + 5, -resolution.y -5, resolution.z + 10)
+		dirLight.target.position.set(0, resolution.y / 2, resolution.z / 2)
+	}
+	if(snake.headPosition.y < -resolution.y) {
+		const finalPosition = new THREE.Vector3(
+			resolution.x / 2,
+			-resolution.y - 12,
+			-resolution.z / 2
+		);
+		
+		gsap.to(camera.position, {
+			...finalPosition,
+			duration: 0.7,
+			onUpdate: () => {
+				camera.lookAt(resolution.x / 2, -resolution.y, resolution.z / 2);
+			}
+		});		
+		camera.up.set(0, -1, 0);
+		// gsap.to(camera.scale, { y: -1});
+		dirLight.position.set(- resolution.x, -resolution.y - 12, -resolution.z / 2)
+		dirLight.target.position.set(resolution.x / 2, -resolution.y, resolution.z / 2)
+		console.log(dirLight.position)
 	}
 })
 
@@ -423,6 +538,7 @@ function printScore() {
 
 const mobileArrows = document.getElementById('mobile-arrows')
 
+
 function registerEventListener() {
 	if (isMobile) {
 		//mobile
@@ -477,9 +593,72 @@ function registerEventListener() {
 		// keyboard
 		window.addEventListener('keydown', function (e) {
 			// console.log(e.code)
+			const HIGH = new Vector3(0, 1, 0);
+			const LOW = new Vector3(0, -1, 0);
+			const UP = new Vector3(0, 0, -1);
+			const DOWN = new Vector3(0, 0, 1);
 			const keyCode = e.code
+			if((snake.headPosition.z >= 20 && snake.headPosition.y < 0) || (snake.headPosition.z < 0 && snake.headPosition.y < 0)) {
+				if(keyCode == "ArrowUp") {
+					snake.setDirection("KeyQ")
+				} else if (keyCode == "ArrowDown") {
+					snake.setDirection("KeyE")
+				} else {
+					snake.setDirection(keyCode)	
+				}
+			} else if((snake.headPosition.x >= 20 && snake.headPosition.y < 0)) {
+				if(keyCode == "ArrowUp") {
+					snake.setDirection("KeyQ")
+				} else if (keyCode == "ArrowDown") {
+					snake.setDirection("KeyE")
+				} else if (keyCode == "ArrowRight") {
+					snake.setDirection("ArrowUp")
+				} else if (keyCode == "ArrowLeft") {
+					snake.setDirection("ArrowDown")
+				} else {
+					snake.setDirection(keyCode)	
+				}
+			} else {
+				snake.setDirection(keyCode)
+			}
 
-			snake.setDirection(keyCode)
+			if(snake.headPosition.x < 0) {
+				if(keyCode == "ArrowUp") {
+					snake.setDirection("KeyQ")
+				} else if (keyCode == "ArrowDown") {
+					snake.setDirection("KeyE")
+				} else if (keyCode == "ArrowRight") {
+					snake.setDirection("ArrowDown")
+				} else if (keyCode == "ArrowLeft") {
+					snake.setDirection("ArrowUp")
+				} else {
+					snake.setDirection(keyCode)	
+				}
+			}
+
+			if(snake.headPosition.z < 0) {
+				if(keyCode == "ArrowUp") {
+					snake.setDirection("KeyQ")
+				} else if (keyCode == "ArrowDown") {
+					snake.setDirection("KeyE")
+				} else if (keyCode == "ArrowRight") {
+					snake.setDirection("ArrowLeft")
+				} else if (keyCode == "ArrowLeft") {
+					snake.setDirection("ArrowRight")
+				} else {
+					snake.setDirection(keyCode)	
+				}
+			}
+
+			if(snake.headPosition.y < -resolution.y) {
+				if(keyCode == "ArrowUp") {
+					snake.setDirection("ArrowDown")
+				} else if (keyCode == "ArrowDown") {
+					snake.setDirection("ArrowUp")
+				} else {
+					snake.setDirection(keyCode)	
+				}
+			}
 
 			if (keyCode === 'Space') {
 				!isRunning ? startGame() : stopGame()
@@ -523,6 +702,7 @@ function resetGame() {
 
 	addCandy()
 	generateEntities()
+	printScore()
 }
 
 const candies = [];
@@ -532,9 +712,38 @@ function addCandy() {
 	const candy = new Candy(resolution, selectedPalette.candyColor)
 
 	let index = getFreeIndex()
+	const randomS = [
+		new THREE.Vector3(0, 5, 5),
+		new THREE.Vector3(resolution.x, 5, 5),
+		new THREE.Vector3(5, 0, 5),
+		new THREE.Vector3(5, -resolution.y , 5),
+		new THREE.Vector3(5, 5, 0),
+		new THREE.Vector3(5, 5, resolution.z)
+	]
+
+	function getRandomVector(array) {
+		const randomIndex = Math.floor(Math.random() * array.length);
+		return array[randomIndex];
+	}
+
+	let randomVector = getRandomVector(randomS);
+	if(randomVector.x == 0 || randomVector == resolution.x) {
+		candy.mesh.position.z = Math.floor(index / resolution.x) - 1;
+		candy.mesh.position.y = -Math.floor(index / resolution.x) - 1;
+		candy.mesh.position.x = randomVector.x - 1;
+	} else if(randomVector.z == 0 || randomVector == resolution.z) {
+		candy.mesh.position.x = Math.floor(index / resolution.z) - 1;
+		candy.mesh.position.y = -Math.floor(index / resolution.z) - 1;
+		candy.mesh.position.z = randomVector.z - 1;
+	} else if(randomVector.y == 0 || randomVector == -resolution.y) {
+		candy.mesh.position.z = Math.floor(index / resolution.z) - 1;
+		candy.mesh.position.x = Math.floor(index / resolution.y) - 1;
+		candy.mesh.position.y = randomVector.y - 1;
+	}
 	
-	candy.mesh.position.x = index % resolution.x;
-	candy.mesh.position.z = Math.floor(index / resolution.x);
+	// candy.mesh.position.x = index % resolution.x;
+	// candy.mesh.position.z = Math.floor(index / resolution.x);
+	// candy.mesh.position.y = -Math.floor(index / resolution.x);
 	candies.push(candy);
 	
 	// console.log(index, candy.getIndexByCoord());
@@ -616,7 +825,8 @@ function generateEntities() {
 
 generateEntities()
 
-scene.add(...lights)
+scene.add(dirLight)
+scene.add(ambLight)
 
 // snake.addTailNode()
 
@@ -717,17 +927,19 @@ gsap.fromTo(
 btnPlay.addEventListener('click', function () {
 	audio.play()
 
-	gsap.to(camera.position, { ...finalPosition, duration: 2 })
-	if (isMobile) {
-		gsap.to(controls.target, {
-			x: resolution.x / 2 - 0.5,
-			y: 0,
-			z: resolution.y / 2 - 0.5,
-		})
-
-		// gsap.to(mobileArrows, { autoAlpha: 0.3, duration: 1, delay: 0.5 })
-	}
-	gsap.to(scene.fog, { duration: 2, near: isMobile ? 30 : 20, far: 55 })
+	gsap.to(camera.position, {
+        ...finalPosition,
+        duration: 2,
+        onUpdate: () => {
+            // Camera luôn nhìn vào điểm cụ thể
+			// camera.rotation.y += Math.PI / 2;
+			
+            camera.lookAt(resolution.x / 2, 0, resolution.y / 2);
+        },
+    });
+	
+	
+	gsap.to(scene.fog, { duration: 2, near: isMobile ? 30 : 20, far: 70 })
 
 	gsap.to(this, {
 		duration: 1,
@@ -870,7 +1082,7 @@ function tic() {
 	 */
 	// const time = clock.getElapsedTime()
 
-	controls.update()
+	// controls.update()
 
 	renderer.render(scene, camera)
 

@@ -3,10 +3,11 @@ import {
 	MeshNormalMaterial,
 	MeshStandardMaterial,
 	SphereGeometry,
+	IcosahedronGeometry
 } from 'three'
 import Entity from "./Entity";
 
-const GEOMETRY = new SphereGeometry(0.3, 20, 20);
+const GEOMETRY = new IcosahedronGeometry(0.5, 2);
 const MATERIAL = new MeshStandardMaterial({
 	color: 0x614bdd,
 })

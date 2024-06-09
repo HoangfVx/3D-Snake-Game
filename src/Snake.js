@@ -208,7 +208,6 @@ export default class Snake extends EventDispatcher {
 		const headPos = currentNode.data.mesh.position.clone();
 		headPos.add(this.direction);
 		//Y và Z
-		console.log(this.direction, "z= ", headPos.z, " y=", headPos.y)
 
 		if(headPos.z >= this.resolution.z && headPos.y >= 0 && this.direction == DOWN) {
 			this.direction = LOW

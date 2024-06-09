@@ -9,23 +9,19 @@ import Tree from './src/Tree'
 import { dirLight, ambLight } from './src/Lights'
 import { resolution } from './src/Params'
 import gsap from 'gsap'
-import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
-import fontSrc from 'three/examples/fonts/helvetiker_bold.typeface.json?url'
-import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry'
 import Entity from './src/Entity'
 import { MeshStandardMaterial } from 'three'
 import { Vector3 } from 'three'
 
 
 const isMobile = window.innerWidth <= 768
-const loader = new FontLoader()
-let font
 
-loader.load(fontSrc, function (loadedFont) {
-	font = loadedFont
 
-	printScore()
-})
+// loader.load(fontSrc, function (loadedFont) {
+// 	font = loadedFont
+
+// 	printScore()
+// })
 
 /**
  * Debug
@@ -89,7 +85,11 @@ function applyPalette(paletteName) {
 
 	planeMaterial.color.set(groundColor)
 	scene.fog.color.set(fogColor)
-	scene.background.set(fogColor)
+	const loader = new THREE.TextureLoader();
+	loader.load('./assets/bg.png', function (texture) {
+    scene.background = texture;
+	});
+	// scene.background.set(fogColor)
 
 	entities
 		.find((entity) => entity instanceof Rock)
@@ -340,6 +340,8 @@ const snake = new Snake({
 })
 // console.log(snake);
 
+
+
 snake.addEventListener('updated', function () {
 
 	if (snake.checkSelfCollision() || snake.checkEntitiesCollision(entities)) {
@@ -360,7 +362,9 @@ snake.addEventListener('updated', function () {
 		addCandy()
 		score += 1
 		// console.log(candies)
-		printScore()
+
+		updateScore(score)
+		// printScore()
 	}
 
 	if(snake.headPosition.z >= 20 && snake.headPosition.y < 0) {
@@ -471,72 +475,83 @@ snake.addEventListener('updated', function () {
 		// gsap.to(camera.scale, { y: -1});
 		dirLight.position.set(- resolution.x, -resolution.y - 12, -resolution.z / 2)
 		dirLight.target.position.set(resolution.x / 2, -resolution.y, resolution.z / 2)
-		console.log(dirLight.position)
 	}
 })
 
 let scoreEntity
 
-function printScore() {
-	if (!font) {
-		return
-	}
+const scoreElement = document.getElementById('score');
 
+function updateScore() {
 	if (!score) {
 		score = 0
 	}
-
-	if (scoreEntity) {
-		scene.remove(scoreEntity.mesh)
-		scoreEntity.mesh.geometry.dispose()
-		scoreEntity.mesh.material.dispose()
+	scoreElement.textContent = `Score: ${score}`;
+	if (score >= 5 && score <10) {
+		scoreElement.style.color = '#7ebb42'; 
+	} else if (score >= 10){
+		scoreElement.style.color = '#bc1f26'; 
 	}
-
-	const geometry = new TextGeometry(`${score}`, {
-		font: font,
-		size: 3,
-		//height: 1,
-		depth: 1,
-		curveSegments: 12,
-		bevelEnabled: true,
-		bevelThickness: 0.1,
-		bevelSize: 0.1,
-		bevelOffset: 0,
-		bevelSegments: 5,
-	})
-
-	geometry.center()
-
-	if (isMobile) {
-		geometry.rotateX(-Math.PI * 0.5)
-	}
-	const SCORE_MATERIAL = new MeshStandardMaterial({
-		color: 0x1B1C1C
-	})
-	const mesh = new THREE.Mesh(
-		geometry,
-		SCORE_MATERIAL
-	)
-
-	mesh.position.x = resolution.x / 2 - 0.5
-	mesh.position.z = -4
-	mesh.position.y = 1.8
-
-	mesh.castShadow = true
-
-	scoreEntity = new Entity(mesh, resolution, { size: 0.8, number: 0.3 })
-
-	console.log('font mesh:', mesh)
-
-	scoreEntity.in()
-	scene.add(scoreEntity.mesh)
 }
+
+// function printScore() {
+// 	if (!font) {
+// 		return
+// 	}
+
+// 	if (!score) {
+// 		score = 0
+// 	}
+
+// 	if (scoreEntity) {
+// 		scene.remove(scoreEntity.mesh)
+// 		scoreEntity.mesh.geometry.dispose()
+// 		scoreEntity.mesh.material.dispose()
+// 	}
+
+// 	const geometry = new TextGeometry(`${score}`, {
+// 		font: font,
+// 		size: 3,
+// 		//height: 1,
+// 		depth: 1,
+// 		curveSegments: 12,
+// 		bevelEnabled: true,
+// 		bevelThickness: 0.1,
+// 		bevelSize: 0.1,
+// 		bevelOffset: 0,
+// 		bevelSegments: 5,
+// 	})
+
+// 	geometry.center()
+
+// 	if (isMobile) {
+// 		geometry.rotateX(-Math.PI * 0.5)
+// 	}
+// 	const SCORE_MATERIAL = new MeshStandardMaterial({
+// 		color: 0x1B1C1C
+// 	})
+// 	const mesh = new THREE.Mesh(
+// 		geometry,
+// 		SCORE_MATERIAL
+// 	)
+
+// 	mesh.position.x = resolution.x / 2 - 0.5
+// 	mesh.position.z = -4
+// 	mesh.position.y = 1.8
+
+// 	mesh.castShadow = true
+
+// 	scoreEntity = new Entity(mesh, resolution, { size: 0.8, number: 0.3 })
+
+// 	console.log('font mesh:', mesh)
+
+// 	scoreEntity.in()
+// 	scene.add(scoreEntity.mesh)
+// }
 
 // window.addEventListener('click', function() {
 // 	!isRunning ? startGame() : stopGame();
 // })
-
-const mobileArrows = document.getElementById('mobile-arrows')
 
 
 function registerEventListener() {
@@ -593,10 +608,6 @@ function registerEventListener() {
 		// keyboard
 		window.addEventListener('keydown', function (e) {
 			// console.log(e.code)
-			const HIGH = new Vector3(0, 1, 0);
-			const LOW = new Vector3(0, -1, 0);
-			const UP = new Vector3(0, 0, -1);
-			const DOWN = new Vector3(0, 0, 1);
 			const keyCode = e.code
 			if((snake.headPosition.z >= 20 && snake.headPosition.y < 0) || (snake.headPosition.z < 0 && snake.headPosition.y < 0)) {
 				if(keyCode == "ArrowUp") {
@@ -702,7 +713,8 @@ function resetGame() {
 
 	addCandy()
 	generateEntities()
-	printScore()
+	// printScore()
+	updateScore()
 }
 
 const candies = [];
@@ -713,32 +725,35 @@ function addCandy() {
 
 	let index = getFreeIndex()
 	const randomS = [
-		new THREE.Vector3(0, 5, 5),
-		new THREE.Vector3(resolution.x, 5, 5),
+		new THREE.Vector3(-1, 5, 5),
+		new THREE.Vector3(resolution.x + 1, 5, 5),
 		new THREE.Vector3(5, 0, 5),
-		new THREE.Vector3(5, -resolution.y , 5),
-		new THREE.Vector3(5, 5, 0),
-		new THREE.Vector3(5, 5, resolution.z)
+		new THREE.Vector3(5, -resolution.y - 1 , 5),
+		new THREE.Vector3(5, 5, -1),
+		new THREE.Vector3(5, 5, resolution.z + 1)
 	]
 
 	function getRandomVector(array) {
 		const randomIndex = Math.floor(Math.random() * array.length);
+		console.log("Random vector", array[randomIndex])
 		return array[randomIndex];
 	}
 
 	let randomVector = getRandomVector(randomS);
-	if(randomVector.x == 0 || randomVector == resolution.x) {
-		candy.mesh.position.z = Math.floor(index / resolution.x) - 1;
-		candy.mesh.position.y = -Math.floor(index / resolution.x) - 1;
-		candy.mesh.position.x = randomVector.x - 1;
-	} else if(randomVector.z == 0 || randomVector == resolution.z) {
-		candy.mesh.position.x = Math.floor(index / resolution.z) - 1;
-		candy.mesh.position.y = -Math.floor(index / resolution.z) - 1;
-		candy.mesh.position.z = randomVector.z - 1;
-	} else if(randomVector.y == 0 || randomVector == -resolution.y) {
-		candy.mesh.position.z = Math.floor(index / resolution.z) - 1;
-		candy.mesh.position.x = Math.floor(index / resolution.y) - 1;
-		candy.mesh.position.y = randomVector.y - 1;
+	if(randomVector.x == -1 || randomVector == resolution.x + 1) {
+		candy.mesh.position.z = index % resolution.x;
+		candy.mesh.position.y = -Math.floor(index / resolution.x);
+		candy.mesh.position.x = randomVector.x;
+	}
+	if(randomVector.z == -1 || randomVector == resolution.z + 1) {
+		candy.mesh.position.x = index % resolution.z;
+		candy.mesh.position.y = -Math.floor(index / resolution.z);
+		candy.mesh.position.z = randomVector.z;
+	}
+	if(randomVector.y == 0 || randomVector == -resolution.y - 1) {
+		candy.mesh.position.z = index % resolution.z;
+		candy.mesh.position.x = Math.floor(index / resolution.y);
+		candy.mesh.position.y = randomVector.y;
 	}
 	
 	// candy.mesh.position.x = index % resolution.x;
@@ -750,6 +765,7 @@ function addCandy() {
 	candy.in()
 
 	scene.add(candy.mesh);
+	console.log("Candy", candy.mesh.position)
 }
 
 addCandy();
@@ -771,7 +787,7 @@ function getFreeIndex() {
 }
 
 
-function addEntity() {
+function addEntityY() {
 	const entity =
 	Math.random() > 0.5
 		? new Rock(resolution, selectedPalette.rockColor)
@@ -781,6 +797,8 @@ function addEntity() {
 
 	entity.mesh.position.x = index % resolution.x
 	entity.mesh.position.z = Math.floor(index / resolution.x)
+	entity.mesh.position.y = Math.random() < 0.5 ? 0 : -resolution.y-1;
+
 
 	entities.push(entity)
 
@@ -789,9 +807,53 @@ function addEntity() {
 	scene.add(entity.mesh)
 }
 
+function addEntityX() {
+	const entity =
+	Math.random() > 0.5
+		? new Rock(resolution, selectedPalette.rockColor)
+		: new Tree(resolution, selectedPalette.treeColor)
+
+	let index = getFreeIndex()
+
+	let temp = Math.random() < 0.5 ? -1 : resolution.x
+	entity.mesh.position.x = Math.random() < 0.5 ? -1 : resolution.x
+	entity.mesh.position.z = Math.floor(index / resolution.x)
+	entity.mesh.position.y = - index % resolution.x -1
+	if(temp == -1) {
+		entity.mesh.rotation.z = Math.PI / 2
+	} else if (temp == resolution.x) {
+		entity.mesh.rotation.z = -Math.PI / 2
+	}
+	entities.push(entity)
+	scene.add(entity.mesh)
+}
+
+function addEntityZ() {
+	const entity =
+	Math.random() > 0.5
+		? new Rock(resolution, selectedPalette.rockColor)
+		: new Tree(resolution, selectedPalette.treeColor)
+
+	let index = getFreeIndex()
+
+	let temp = Math.random() < 0.5 ? -1 : resolution.x
+	entity.mesh.position.x = Math.floor(index / resolution.x) 
+	entity.mesh.position.z = Math.random() < 0.5 ? -1 : resolution.z
+	entity.mesh.position.y = -index % resolution.x -1
+	if(temp == -1) {
+		entity.mesh.rotation.x = -Math.PI / 2
+	} else if (temp == resolution.x) {
+		entity.mesh.rotation.x = Math.PI / 2
+	}
+	entities.push(entity)
+	scene.add(entity.mesh)
+}
+
 function generateEntities() {
-	for (let i = 0; i < 20; i++) {
-		addEntity()
+	for (let i = 0; i < 30; i++) {
+		addEntityX()
+		addEntityY()
+		addEntityZ()
 	}
 
 	entities.sort((a, b) => {
@@ -829,81 +891,6 @@ scene.add(dirLight)
 scene.add(ambLight)
 
 // snake.addTailNode()
-
-// add entities out of the grid
-const treeData = [
-	new THREE.Vector4(-5, 0, 10, 1),
-	new THREE.Vector4(-6, 0, 15, 1.2),
-	new THREE.Vector4(-5, 0, 16, 0.8),
-	new THREE.Vector4(-10, 0, 4, 1.3),
-	new THREE.Vector4(-5, 0, -3, 2),
-	new THREE.Vector4(-4, 0, -4, 1.5),
-	new THREE.Vector4(-2, 0, -15, 1),
-	new THREE.Vector4(5, 0, -20, 1.2),
-	new THREE.Vector4(24, 0, -12, 1.2),
-	new THREE.Vector4(2, 0, -6, 1.2),
-	new THREE.Vector4(3, 0, -7, 1.8),
-	new THREE.Vector4(1, 0, -9, 1.0),
-	new THREE.Vector4(15, 0, -8, 1.8),
-	new THREE.Vector4(17, 0, -9, 1.1),
-	new THREE.Vector4(18, 0, -7, 1.3),
-	new THREE.Vector4(24, 0, -1, 1.3),
-	new THREE.Vector4(26, 0, 0, 1.8),
-	new THREE.Vector4(32, 0, 0, 1),
-	new THREE.Vector4(28, 0, 6, 1.7),
-	new THREE.Vector4(24, 0, 15, 1.1),
-	new THREE.Vector4(16, 0, 23, 1.1),
-	new THREE.Vector4(12, 0, 24, 0.9),
-	new THREE.Vector4(-13, 0, -13, 0.7),
-	new THREE.Vector4(35, 0, 10, 0.7),
-]
-const tree = new Tree(resolution)
-
-treeData.forEach(({ x, y, z, w }) => {
-	let clone = tree.mesh.clone()
-	clone.position.set(x, y, z)
-	clone.scale.setScalar(w)
-	scene.add(clone)
-})
-
-const rock = new Rock(resolution)
-const resX = resolution.x
-const rexY = resolution.y
-
-const rockData = [
-	[new THREE.Vector3(-7, -0.5, 2), new THREE.Vector4(2, 8, 3, 2.8)],
-	[new THREE.Vector3(-3, -0.5, -10), new THREE.Vector4(3, 2, 2.5, 1.5)],
-	[new THREE.Vector3(-5, -0.5, 3), new THREE.Vector4(1, 1.5, 2, 0.8)],
-	[new THREE.Vector3(resX + 5, -0.5, 3), new THREE.Vector4(4, 1, 3, 1)],
-	[new THREE.Vector3(resX + 4, -0.5, 2), new THREE.Vector4(2, 2, 1, 1)],
-	[new THREE.Vector3(resX + 8, -0.5, 16), new THREE.Vector4(6, 2, 4, 4)],
-	[new THREE.Vector3(resX + 6, -0.5, 13), new THREE.Vector4(3, 2, 2.5, 3.2)],
-	[new THREE.Vector3(resX + 5, -0.5, -8), new THREE.Vector4(1, 1, 1, 0)],
-	[new THREE.Vector3(resX + 6, -0.5, -7), new THREE.Vector4(2, 4, 1.5, 0.5)],
-	[new THREE.Vector3(-5, -0.5, 14), new THREE.Vector4(1, 3, 2, 0)],
-	[new THREE.Vector3(-4, -0.5, 15), new THREE.Vector4(0.8, 0.6, 0.7, 0)],
-	[
-		new THREE.Vector3(resX / 2 + 5, -0.5, 25),
-		new THREE.Vector4(2.5, 0.8, 4, 2),
-	],
-	[
-		new THREE.Vector3(resX / 2 + 9, -0.5, 22),
-		new THREE.Vector4(1.2, 2, 1.2, 1),
-	],
-	[
-		new THREE.Vector3(resX / 2 + 8, -0.5, 21.5),
-		new THREE.Vector4(0.8, 1, 0.8, 2),
-	],
-	// [new THREE.Vector3(0, -0.5, 0), new THREE.Vector4(1, 1, 1, 0)],
-]
-
-rockData.forEach(([position, { x, y, z, w }]) => {
-	let clone = new Rock(resolution).mesh
-	clone.position.copy(position)
-	clone.scale.set(x, y, z)
-	clone.rotation.y = w
-	scene.add(clone)
-})
 
 const audio = document.getElementById('audio')
 const btnVolume = document.getElementById('btn-volume')
@@ -1033,34 +1020,6 @@ paletteSelectors.forEach((selector) =>
 const manager = new THREE.LoadingManager()
 const textureLoader = new THREE.TextureLoader(manager)
 
-const wasd = textureLoader.load('/wasd.png')
-const arrows = textureLoader.load('/arrows.png')
-
-const wasdGeometry = new THREE.PlaneGeometry(3.5, 2)
-wasdGeometry.rotateX(-Math.PI * 0.5)
-
-const planeWasd = new THREE.Mesh(
-	wasdGeometry,
-	new THREE.MeshStandardMaterial({
-		transparent: true,
-		map: wasd,
-		opacity: isMobile ? 0 : 0.5,
-	})
-)
-
-const planeArrows = new THREE.Mesh(
-	wasdGeometry,
-	new THREE.MeshStandardMaterial({
-		transparent: true,
-		map: arrows,
-		opacity: isMobile ? 0 : 0.5,
-	})
-)
-
-planeArrows.position.set(8.7, 0, 21)
-planeWasd.position.set(13, 0, 21)
-
-scene.add(planeArrows, planeWasd)
 
 manager.onLoad = () => {
 	// console.log('texture caricate')

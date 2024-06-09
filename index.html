@@ -7,9 +7,16 @@
     <meta property="og:title" content="Snake 3D" />
     <meta name="description" content="A simple 3D snake indie game!" />
     <meta property="og:description" content="A simple 3D snake indie game!" />
-    <meta property="og:url" content="https://snake3d.vercel.app/" />
     <meta property="og:image" content="/og-preview.png" />
     <title>Snake 3D Game</title>
+    <style>
+      #score {
+        font-size: 40px;
+        font-family: monospace;
+        font-weight: 800;
+        padding: 20px;
+      }
+    </style>
   </head>
   <body>
     <script type="module" src="/main.js"></script>
@@ -23,6 +30,7 @@
     >
       <!-- <a href="/media/cc0-audio/t-rex-roar.mp3"> Download audio </a> -->
     </audio>
+    <h1 id="score" class="fixed w-max drop-shadow-xl">Score: 0</h1>
     <button
       style="opacity: 0"
       id="btn-play"
